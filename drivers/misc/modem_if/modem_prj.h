@@ -396,14 +396,17 @@ struct modem_ctl {
 	unsigned gpio_ap_cp_int1;
 	unsigned gpio_ap_cp_int2;
 	unsigned gpio_uart_sel;
+
+	unsigned gpio_uart_txd;
+	unsigned gpio_uart_rxd;
+	unsigned gpio_uart_cts;
+	unsigned gpio_uart_rts;
 #endif
 
 #ifdef CONFIG_SEC_DUAL_MODEM_MODE
 	unsigned gpio_sim_sel;
 //temp disable bringup DKLee	unsigned gpio_cp_ctrl1;
 #endif
-
-	
 
 	int irq_phone_active;
 	int irq_cp_dump_int;

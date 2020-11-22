@@ -39,6 +39,10 @@
 #include "modem_link_device_spi.h"
 #endif
 
+#if defined(CONFIG_SEC_MIF_UART_SWITCH)
+#include <linux/platform_data/msm_serial_hs.h>
+#endif
+
 #if 0 //def CONFIG_OF
 void sprd6500_modem_cfg_gpio(struct platform_device *pdev);
 #endif
@@ -48,50 +52,107 @@ void sprd6500_modem_cfg_gpio(struct platform_device *pdev);
 
 int sprd_boot_done;
 
-#define GPIO_BT_UART_RTS 48
-#define GPIO_BT_UART_CTS 47
-#define GPIO_BT_UART_RXD 46
-#define GPIO_BT_UART_TXD 45
+#if defined(CONFIG_SEC_MIF_UART_SWITCH)
+static int sprd6500_config_uart_on(struct modem_ctl *mc)
+{
+	int rc;
 
-static unsigned sprd6500_uart_on_table[] = {
-	GPIO_CFG(GPIO_BT_UART_RTS, 2, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL,
-		 GPIO_CFG_8MA),
-	GPIO_CFG(GPIO_BT_UART_CTS, 2, GPIO_CFG_INPUT, GPIO_CFG_NO_PULL,
-		 GPIO_CFG_8MA),
-	GPIO_CFG(GPIO_BT_UART_RXD, 2, GPIO_CFG_INPUT, GPIO_CFG_NO_PULL,
-		 GPIO_CFG_8MA),
-	GPIO_CFG(GPIO_BT_UART_TXD, 2, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL,
-		 GPIO_CFG_8MA),
-};
+	pr_err("[MODEM_IF:SC6500] <%s>\n", __func__);
 
-static unsigned sprd6500_uart_off_table[] = {
-	GPIO_CFG(GPIO_BT_UART_RTS, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL,
-		 GPIO_CFG_8MA),
-	GPIO_CFG(GPIO_BT_UART_CTS, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL,
-		 GPIO_CFG_8MA),
-	GPIO_CFG(GPIO_BT_UART_RXD, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL,
-		 GPIO_CFG_8MA),
-	GPIO_CFG(GPIO_BT_UART_TXD, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL,
-		 GPIO_CFG_8MA),
-};
+	rc = gpio_tlmm_config(GPIO_CFG(mc->gpio_uart_rts, 2, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL,
+		 GPIO_CFG_8MA), GPIO_CFG_ENABLE);
+	if (rc < 0)
+		pr_err("[MODEM_IF:SC6500] %s: gpio_tlmm_config(%s)=%d\n",
+		       __func__, "gpio_uart_rts", rc);
+
+	rc = gpio_tlmm_config(GPIO_CFG(mc->gpio_uart_cts, 2, GPIO_CFG_INPUT, GPIO_CFG_NO_PULL,
+		 GPIO_CFG_8MA), GPIO_CFG_ENABLE);
+	if (rc < 0)
+		pr_err("[MODEM_IF:SC6500] %s: gpio_tlmm_config(%s)=%d\n",
+		       __func__, "gpio_uart_cts", rc);
+
+	rc = gpio_tlmm_config(GPIO_CFG(mc->gpio_uart_rxd, 2, GPIO_CFG_INPUT, GPIO_CFG_NO_PULL,
+		 GPIO_CFG_8MA), GPIO_CFG_ENABLE);
+	if (rc < 0)
+		pr_err("[MODEM_IF:SC6500] %s: gpio_tlmm_config(%s)=%d\n",
+		       __func__, "gpio_uart_rxd", rc);
+
+	rc = gpio_tlmm_config(GPIO_CFG(mc->gpio_uart_txd, 2, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL,
+		 GPIO_CFG_8MA), GPIO_CFG_ENABLE);
+	if (rc < 0)
+		pr_err("[MODEM_IF:SC6500] %s: gpio_tlmm_config(%s)=%d\n",
+		       __func__, "gpio_uart_txd", rc);
+
+	return 0;
+}
+
+static int sprd6500_config_uart_off(struct modem_ctl *mc)
+{
+	int rc;
+
+	pr_err("[MODEM_IF:SC6500] <%s>\n", __func__);
+
+	rc = gpio_tlmm_config(GPIO_CFG(mc->gpio_uart_rts, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL,
+		 GPIO_CFG_8MA), GPIO_CFG_ENABLE);
+	if (rc < 0)
+		pr_err("[MODEM_IF:SC6500] %s: gpio_tlmm_config(%s)=%d\n",
+		       __func__, "gpio_uart_rts", rc);
+
+	rc = gpio_tlmm_config(GPIO_CFG(mc->gpio_uart_cts, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL,
+		 GPIO_CFG_8MA), GPIO_CFG_ENABLE);
+	if (rc < 0)
+		pr_err("[MODEM_IF:SC6500] %s: gpio_tlmm_config(%s)=%d\n",
+		       __func__, "gpio_uart_cts", rc);
+
+	rc = gpio_tlmm_config(GPIO_CFG(mc->gpio_uart_rxd, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL,
+		 GPIO_CFG_8MA), GPIO_CFG_ENABLE);
+	if (rc < 0)
+		pr_err("[MODEM_IF:SC6500] %s: gpio_tlmm_config(%s)=%d\n",
+		       __func__, "gpio_uart_rxd", rc);
+
+	rc = gpio_tlmm_config(GPIO_CFG(mc->gpio_uart_txd, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL,
+		 GPIO_CFG_8MA), GPIO_CFG_ENABLE);
+	if (rc < 0)
+		pr_err("[MODEM_IF:SC6500] %s: gpio_tlmm_config(%s)=%d\n",
+		       __func__, "gpio_uart_txd", rc);
+
+	gpio_set_value(mc->gpio_uart_rts, 0);
+	gpio_set_value(mc->gpio_uart_cts, 0);
+	gpio_set_value(mc->gpio_uart_rxd, 0);
+	gpio_set_value(mc->gpio_uart_txd, 0);
+
+	return 0;
+}
+#endif
+
+static int sprd6500_is_qc_gpio(int gpio)
+{	
+	if (gpio < 300)
+		return 1;
+
+	return 0;
+}
 
 static int sprd6500_on(struct modem_ctl *mc)
 {
-	int pin = 0;
-
 	pr_err("[MODEM_IF:SC6500] <%s> start!!!\n", __func__);
 
 	disable_irq(mc->irq_phone_active);
 
-	for (pin = 0; pin < ARRAY_SIZE(sprd6500_uart_on_table); pin++) {
-		gpio_tlmm_config(sprd6500_uart_on_table[pin], GPIO_CFG_ENABLE);
-	}
+#if defined(CONFIG_SEC_MIF_UART_SWITCH)
+	sprd6500_config_uart_on(mc);
+#endif
 
 	// UART_SEL for UART download
+	if (sprd6500_is_qc_gpio(mc->gpio_uart_sel))	{
 	gpio_tlmm_config(GPIO_CFG(mc->gpio_uart_sel, GPIOMUX_FUNC_GPIO,
 		GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_8MA),
 		GPIO_CFG_ENABLE);
 	gpio_set_value(mc->gpio_uart_sel, 1);
+	}
+	else {
+		gpio_direction_output(mc->gpio_uart_sel, 1);	
+	}
 
 	pr_err("[MODEM_IF:SC6500] <%s> CP On(%d,%d)\n", __func__, 
 			gpio_get_value(mc->gpio_cp_on),
@@ -99,10 +160,15 @@ static int sprd6500_on(struct modem_ctl *mc)
 
 	msleep(100);
 
+	if (sprd6500_is_qc_gpio(mc->gpio_cp_on))	{
 	gpio_tlmm_config(GPIO_CFG(mc->gpio_cp_on, GPIOMUX_FUNC_GPIO,
 		GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA),
 		GPIO_CFG_ENABLE);
 	gpio_set_value(mc->gpio_cp_on, 1);
+	}
+	else {
+		gpio_direction_output(mc->gpio_cp_on, 1);
+	}
 //	msleep(100);
 
 	pr_err("[MODEM_IF:SC6500] <%s> IRQ enabled\n", __func__);
@@ -120,7 +186,10 @@ static int sprd6500_on(struct modem_ctl *mc)
 	gpio_set_value(mc->gpio_fpga1_cs_n, 1);
 #endif
 
+	if (sprd6500_is_qc_gpio(mc->gpio_pda_active))
 	gpio_set_value(mc->gpio_pda_active, 1);
+	else
+		gpio_direction_output(mc->gpio_pda_active, 1);
 
 	return 0;
 }
@@ -149,7 +218,7 @@ static int sprd6500_reset(struct modem_ctl *mc)
 {
 	int ret = 0;
 
-	pr_debug("[MODEM_IF:SC6500] sprd6500_reset()\n");
+	pr_info("[MODEM_IF:SC6500] sprd6500_reset()\n");
 
 	ret = sprd6500_off(mc);
 	if (ret)
@@ -166,17 +235,27 @@ static int sprd6500_reset(struct modem_ctl *mc)
 
 int sprd6500_boot_on(struct modem_ctl *mc)
 {
-	int pin, rc = 0;
-
+#if defined(CONFIG_SEC_MIF_UART_SWITCH)
+	int clk_state = 0;
+	struct uart_port *uport = NULL;
+#endif
 	pr_err("[MODEM_IF:SC6500] <%s> BOOT_ON!!!\n", __func__);
 
-	for (pin = 0; pin < ARRAY_SIZE(sprd6500_uart_on_table); pin++) {
-			rc = gpio_tlmm_config(sprd6500_uart_on_table[pin],
-					      GPIO_CFG_ENABLE);
-		if (rc < 0)
-			pr_err("[MODEM_IF:SC6500] %s: gpio_tlmm_config(%#x)=%d\n",
-			       __func__, sprd6500_uart_on_table[pin], rc);
-	}
+#if defined(CONFIG_SEC_MIF_UART_SWITCH)
+	uport = msm_hs_get_port_by_id(0);
+
+	clk_state = msm_hs_get_clock_state(uport);
+	pr_err("[MODEM_IF:SC6500] hsuart state - before [%d]\n", clk_state);
+
+	pr_err("[MODEM_IF:SC6500] hsuart clock - on\n");
+	msm_hs_request_clock_on(uport);
+	msm_hs_set_mctrl(uport, TIOCM_RTS);
+
+	clk_state = msm_hs_get_clock_state(uport);
+	pr_err("[MODEM_IF:SC6500] hsuart state - after [%d]\n", clk_state);
+
+	sprd6500_config_uart_on(mc);
+#endif
 
 	// UART_SEL for UART download
 	gpio_tlmm_config(GPIO_CFG(mc->gpio_uart_sel, GPIOMUX_FUNC_GPIO,
@@ -189,8 +268,6 @@ int sprd6500_boot_on(struct modem_ctl *mc)
 
 static int sprd6500_boot_off(struct modem_ctl *mc)
 {
-	int pin, rc = 0;
-
 	pr_info("[MODEM_IF:SC6500] <%s>\n", __func__);
 
 	// UART_SEL for BT
@@ -199,18 +276,9 @@ static int sprd6500_boot_off(struct modem_ctl *mc)
 		GPIO_CFG_ENABLE);
 	gpio_set_value(mc->gpio_uart_sel, 0);
 
-	for (pin = 0; pin < ARRAY_SIZE(sprd6500_uart_off_table); pin++) {
-			rc = gpio_tlmm_config(sprd6500_uart_off_table[pin],
-					      GPIO_CFG_ENABLE);
-		if (rc < 0)
-			pr_err("[MODEM_IF:SC6500] %s: gpio_tlmm_config(%#x)=%d\n",
-			       __func__, sprd6500_uart_off_table[pin], rc);
-	}
-
-	gpio_set_value(GPIO_BT_UART_RTS, 0);
-	gpio_set_value(GPIO_BT_UART_CTS, 0);
-	gpio_set_value(GPIO_BT_UART_RXD, 0);
-	gpio_set_value(GPIO_BT_UART_TXD, 0);
+#if defined(CONFIG_SEC_MIF_UART_SWITCH)
+	sprd6500_config_uart_off(mc);
+#endif
 
 //	mc->iod->modem_state_changed(mc->iod, STATE_OFFLINE);
 
@@ -328,6 +396,11 @@ int sprd6500_init_modemctl_device(struct modem_ctl *mc, struct modem_data *pdata
 	mc->gpio_ap_cp_int1 = pdata->gpio_ap_cp_int1;
 	mc->gpio_ap_cp_int2 = pdata->gpio_ap_cp_int2;
 	mc->gpio_uart_sel = pdata->gpio_uart_sel;
+
+	mc->gpio_uart_txd = pdata->gpio_uart_txd;
+	mc->gpio_uart_rxd = pdata->gpio_uart_rxd;
+	mc->gpio_uart_cts = pdata->gpio_uart_cts;
+	mc->gpio_uart_rts = pdata->gpio_uart_rts;;
 #ifdef CONFIG_SEC_DUAL_MODEM_MODE
 	mc->gpio_sim_sel = pdata->gpio_sim_sel;
 #endif

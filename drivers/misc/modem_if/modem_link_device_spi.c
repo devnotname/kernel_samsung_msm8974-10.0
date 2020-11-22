@@ -748,8 +748,7 @@ static void spi_rx_work(void)
 
 	if (!wake_lock_active(&spild->spi_wake_lock) ||
 		gpio_get_value(spild->gpio_ipc_srdy) == SPI_GPIOLEVEL_LOW ||
-		//G9009D incoming call screen delay issue
-		//get_console_suspended() ||
+		get_console_suspended() ||
 		spild->spi_state == SPI_STATE_END)
 		return;
 
@@ -1765,7 +1764,7 @@ static void get_mif_spi_dt_data(struct device *dev)
 		p_spild->gpio_cp_dump_int);
 }
 
-static int __devinit if_spi_platform_probe(struct platform_device *pdev)
+static int /*__devinit*/ if_spi_platform_probe(struct platform_device *pdev)
 {
 	int ret;
 	struct spi_v_buff *od;
@@ -1848,7 +1847,7 @@ err:
 	return 0;
 }
 
-static int __devexit if_spi_platform_remove(struct platform_device *pdev)
+static int /*__devexit*/ if_spi_platform_remove(struct platform_device *pdev)
 {
 	struct spi_v_buff *od = platform_get_drvdata(pdev);
 	platform_set_drvdata(pdev, NULL);
@@ -1892,7 +1891,7 @@ static int if_spi_remove(struct spi_device *spi)
 
 static struct platform_driver if_spi_platform_driver = {
 	.probe = if_spi_platform_probe,
-	.remove = __devexit_p(if_spi_platform_remove),
+	.remove = if_spi_platform_remove,
 	.driver = {
 		.name = "if_spi_platform_driver",
 	},
@@ -1906,7 +1905,7 @@ static const struct of_device_id if_spi_match_table[] = {
 
 static struct spi_driver if_spi_driver = {
 	.probe = if_spi_probe,
-	.remove = __devexit_p(if_spi_remove),
+	.remove = if_spi_remove,
 	.driver = {
 		.name = "if_spi_driver",
 		.of_match_table = if_spi_match_table,
