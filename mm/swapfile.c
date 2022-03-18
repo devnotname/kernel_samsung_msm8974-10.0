@@ -201,8 +201,8 @@ static int wait_for_discard(void *word)
 	return 0;
 }
 
-#define SWAPFILE_CLUSTER	256
-#define LATENCY_LIMIT		256
+#define SWAPFILE_CLUSTER	384
+#define LATENCY_LIMIT		384
 
 static unsigned long scan_swap_map(struct swap_info_struct *si,
 				   unsigned char usage)
